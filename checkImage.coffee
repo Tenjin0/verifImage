@@ -2,8 +2,8 @@
 
 fs = require 'fs'
 module.exports = checkImage : (filePath) ->
+  fs.readFile filePath
   console.log 'filePath', filePath
-  fs.readFile(filePath)
 
 	# if (fs.lstatSync(path_string).isDirectory())
 
