@@ -1,23 +1,58 @@
 # https://gist.github.com/faisalman/4213592s
+# Buffer = require('buffer').Buffer not neccesary
 
 fs = require 'fs'
-module.exports = 
-checkImage : ( filePath)  ->  
+path = require 'path'
+module.exports =
+checkImage : ( filePath)  ->
 	console.log 'filePath', filePath
 	fs.open filePath, 'r', (err, fd) ->
 		if err
 			throw err
-		buffer = new Buffer(1)
-		loop
-			num = fs.readSync(fd, buffer, 0, 1, null)
-			if num == 0
-				break
-			console.log 'byte read', buffer[0]
-	
-	fs.readFile filePath, 'hex', (err, data) ->
-		if err
-			return console.log(err)
-		console.log 'data', data
+		extension =path.extname filePath
+		console.log 'extension', extension
 
-process.argv.forEach (val, index, array) ->
-		console.log index + ': ' + val
+		num = switch extension.toLowerCase()
+			when '.png'
+				buffer = new Buffer(8)
+				console.log 'je suis dans le cas : png'
+				fs.read fd, buffer, 0,8,0, ->
+					console.log 'buffer', buffer
+					console.log 'buffer.toString', buffer.toString()
+			when ".jpeg", "jpg"
+				console.log 'je suis dans le cas : jpeg'
+				buffer = new Buffer(11)
+				fs.read fd, buffer, 0,11,0, ->
+					console.log 'buffer', buffer
+					console.log 'buffer.toString', buffer.toString()
+			when ".gif"
+				console.log 'je suis dans le cas : gif'
+				buffer = new Buffer(3)
+				fs.read fd, buffer, 0,3,0, ->
+					console.log 'buffer', buffer
+					console.log 'buffer.toString', buffer.toString()
+			when ".bmp"
+				console.log 'je suis dans le cas : bmp'
+				buffer = new Buffer(2)
+				fs.read fd, buffer, 0,2,0, ->
+					console.log 'buffer', buffer
+					console.log 'buffer.toString', buffer.toString()
+			when ".tiff"
+				console.log 'je suis dans le cas : tiff'
+				buffer = new Buffer(3)
+				fs.read fd, buffer, 0,3,0, ->
+					console.log 'buffer', buffer
+					console.log 'buffer.toString', buffer.toString()
+		console.log 'num', num
+		# if extension == '.png'
+		# 	buffer = new Buffer(8)
+		# 	fs.read fd, buffer, 0,8,0, ->
+		# 		console.log 'buffer', buffer
+		# 		console.log 'buffer.toString', buffer.toString()
+	# fs.readFile filePath,['hex'], (err, data) ->
+	# 	if err
+	# 		return console.log(err)
+	# 	console.log 'Buffer', Buffer.isBuffer(data) false
+	# 	console.log 'Buffer content[0]', Buffer[0] undefined
+	# 	console.log 'data content,', data
+	# 	console.log 'data content,', data[0], data[1]
