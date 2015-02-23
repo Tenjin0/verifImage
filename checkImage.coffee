@@ -1,58 +1,46 @@
-# https://gist.github.com/faisalman/4213592s
-# Buffer = require('buffer').Buffer not neccesary
 
 fs = require 'fs'
 path = require 'path'
-module.exports =
-checkImage : ( filePath)  ->
-	console.log 'filePath', filePath
-	fs.open filePath, 'r', (err, fd) ->
-		if err
-			throw err
-		extension =path.extname filePath
-		console.log 'extension', extension
+signatureMap =
+	'.png' : ['89504E470D0A1A0A']
+	'.jpg' : ['FFD8FF']
+	'.jpeg' : ['FFD8FF']
+	'.gif' : ['47494638']
+	'.bmp' : ['41564920']
+	'.avi' : ['41564920', '52494646']
+	'.mkv' : ['1A45DFA3']
+	'.mp4' : ['00000018667479706D703432', '000000186674797069736F6D', '000000186674797033677035']
+	'.mp3' : ['494433', 'FFFB', 'FFF3', 'FFE3']
 
-		num = switch extension.toLowerCase()
-			when '.png'
-				buffer = new Buffer(8)
-				console.log 'je suis dans le cas : png'
-				fs.read fd, buffer, 0,8,0, ->
-					console.log 'buffer', buffer
-					console.log 'buffer.toString', buffer.toString()
-			when ".jpeg", "jpg"
-				console.log 'je suis dans le cas : jpeg'
-				buffer = new Buffer(11)
-				fs.read fd, buffer, 0,11,0, ->
-					console.log 'buffer', buffer
-					console.log 'buffer.toString', buffer.toString()
-			when ".gif"
-				console.log 'je suis dans le cas : gif'
-				buffer = new Buffer(3)
-				fs.read fd, buffer, 0,3,0, ->
-					console.log 'buffer', buffer
-					console.log 'buffer.toString', buffer.toString()
-			when ".bmp"
-				console.log 'je suis dans le cas : bmp'
-				buffer = new Buffer(2)
-				fs.read fd, buffer, 0,2,0, ->
-					console.log 'buffer', buffer
-					console.log 'buffer.toString', buffer.toString()
-			when ".tiff"
-				console.log 'je suis dans le cas : tiff'
-				buffer = new Buffer(3)
-				fs.read fd, buffer, 0,3,0, ->
-					console.log 'buffer', buffer
-					console.log 'buffer.toString', buffer.toString()
-		console.log 'num', num
-		# if extension == '.png'
-		# 	buffer = new Buffer(8)
-		# 	fs.read fd, buffer, 0,8,0, ->
-		# 		console.log 'buffer', buffer
-		# 		console.log 'buffer.toString', buffer.toString()
-	# fs.readFile filePath,['hex'], (err, data) ->
-	# 	if err
-	# 		return console.log(err)
-	# 	console.log 'Buffer', Buffer.isBuffer(data) false
-	# 	console.log 'Buffer content[0]', Buffer[0] undefined
-	# 	console.log 'data content,', data
-	# 	console.log 'data content,', data[0], data[1]
+for extension, signatures of signatureMap
+	signatureMap[extension] = for sig in signatures
+		new Buffer(sig,'hex')
+
+validate = (fd, tabSignatureValue) ->
+	for expectedSignature in tabSignatureValue
+		fileHeader = new Buffer(expectedSignature.length)
+		fs.readSync fd, fileHeader, 0, expectedSignature.length, 0
+
+		if fileHeader.equals(expectedSignature)
+			return true
+	false
+
+module.exports =
+	checkImage : (filePath)  ->
+		fs.exists filePath, (exists) ->
+			if (exists)
+				fs.open filePath, 'r', (err, fd) ->
+					if err
+						throw err
+
+					fileExtension = path.extname filePath
+					fileExtension = fileExtension.toLowerCase()
+
+					if fileExtension of signatureMap
+						toTest = validate fd, signatureMap[fileExtension]
+						if toTest
+							console.log fileExtension, ' : todo bien !!'
+						else
+							console.log fileExtension, ' : ca marche pas !!!!'
+					else
+						console.log fileExtension, ': ce format n\'est pas supporté'
