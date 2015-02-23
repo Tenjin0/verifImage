@@ -1,18 +1,34 @@
-gruntFunction = (grunt) ->
+module.exports = (grunt)->
 
-	gruntConfig =
+	grunt.loadNpmTasks 'grunt-contrib-coffee'
+	grunt.loadTasks 'grunt/checkMedia'
+	localConfig = grunt.file.readJSON "conf/local.json"
+
+	GameConfig =
+		data: localConfig.contentFolderPath
+
+	grunt.initConfig
+		config : GameConfig
 		pkg:
 			grunt.file.readJSON 'package.json'
-
-		concat:
-
+		watch:
+			coffee:
+				files: '*.coffee',
+				tasks: ['coffee:compile']
 		coffee:
-			app:
+			compile:
+				expand: true,
+				flatten: true,
+				src: ['*.coffee']
+				ext: '.js'
+		checkMedia:
+			dist:
+				files:[
+					src:  ['<%= config.data %>/images/bureau-1024.jpg']
+				]
 
-		grunt.initConfig gruntConfig
-		grunt.loadNpmTasks 'grunt-config-coffee'
-		grunt.loadNpmTasks 'grunt-config-concat'
-		grunt.registerTask
-		null
 
-module.exports = gruntFunction
+	grunt.registerTask 'default', [
+		# 'coffee:compile'
+		'checkMedia:dist'
+	]
