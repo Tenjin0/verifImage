@@ -32,7 +32,7 @@ validate = (fd, tabSignatureValue) ->
 	false
 
 
-checkMedia = (filePath, done, retour)  ->
+checkMedia = (filePath,nb, done, retour)  ->
 
 	fs.open filePath, 'r', (err, fd) ->
 		if err
@@ -51,26 +51,28 @@ checkMedia = (filePath, done, retour)  ->
 module.exports = (grunt)->
 	fs = require 'fs'
 	path = require 'path'
-	grunt.registerMultiTask 'checkMedia:check', 'Check that files correspond to their extensions.', ()->
+	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', ()->
+		count = 0
+		err = false
 		done = @async()
+		total = @files.length
 		@files.forEach (file)->
 			file.src.forEach (filepath)->
-				# console.log 'Loading file:',filepath
+				count++
+				nb=count
 				if fs.lstatSync(filepath).isFile()
-					promise = checkMedia filepath , done, (done, test) ->
-						# grunt.util.warn
-						# console.log test
+					promise = checkMedia filepath,nb,done, (done, test) =>
 						if test
 							grunt.log.ok filepath, 'format OK'
 						else
 							grunt.log.error filepath, 'wrong format'
-							# console.log grunt.log.error
-							# grunt.fatal filepath, 'wrong format'
+							err = true
+						if nb == total
+							if err
+								grunt.fatal 'certains fichiers sont erronés'
+							done()
+						
 
-						done()
-	grunt.registerMultiTask 'checkMedia:error', ' if there is any error while ckecking.', ()->
-		done = @async()
-		@files.forEach (file)-
 
 
 
