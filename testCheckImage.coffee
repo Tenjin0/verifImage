@@ -1,9 +1,10 @@
 checkImage = require './checkImage'
 
-checkImage.checkImage 'index.jpeg'
-checkImage.checkImage 'icecream.png'
-checkImage.checkImage 'wireframe.gif'
-checkImage.checkImage 'test.GIF'
+checkImage.checkMedia __dirname + '/media/index.jpeg'
+checkImage.checkMedia __dirname + '/media/icecream.png'
+checkImage.checkMedia __dirname + '/media/wireframe.gif'
+checkImage.checkMedia __dirname + '/toto/test.GIF'
+
 # temp = __dirname + '/test.gif'
 # console.log temp
 

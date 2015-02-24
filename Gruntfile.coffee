@@ -24,11 +24,13 @@ module.exports = (grunt)->
 		checkMedia:
 			dist:
 				files:[
-					src:  ['<%= config.data %>/images/bureau-1024.jpg']
+					expand: true,
+					src:  ['<%= config.data %>/**/*']
+					# src:  ['<%= config.data %>/images/*.jpg']
 				]
-
 
 	grunt.registerTask 'default', [
 		# 'coffee:compile'
 		'checkMedia:dist'
+
 	]

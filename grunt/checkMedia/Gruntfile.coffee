@@ -1,5 +1,7 @@
 fs = require 'fs'
 path = require 'path'
+grunt = require 'grunt'
+# checkMedia = require '../../checkImage'
 signatureMap =
 	'.png' : ['89504E470D0A1A0A']
 	'.jpg' : ['FFD8FF']
@@ -15,43 +17,57 @@ for extension, signatures of signatureMap
 	signatureMap[extension] = for sig in signatures
 		new Buffer(sig,'hex')
 
+bonjour = ( string ) ->
+	console.log 'Bonjour', string
+	null
+
 validate = (fd, tabSignatureValue) ->
 	for expectedSignature in tabSignatureValue
+		# console.log expectedSignature
 		fileHeader = new Buffer(expectedSignature.length)
 		fs.readSync fd, fileHeader, 0, expectedSignature.length, 0
-
+		# console.log fileHeader , '<-------->', expectedSignature
 		if fileHeader.equals(expectedSignature)
 			return true
 	false
 
-checkMedia : (filePath)  ->
-	fs.exists filePath, (exists) ->
-		if (exists)
-			fs.open filePath, 'r', (err, fd) ->
-				if err
-					throw err
 
-				fileExtension = path.extname filePath
-				fileExtension = fileExtension.toLowerCase()
+checkMedia = (filePath, done, retour)  ->
 
-				if fileExtension of signatureMap
-					toTest = validate fd, signatureMap[fileExtension]
+	fs.open filePath, 'r', (err, fd) ->
+		if err
+			throw err
+		fileExtension = path.extname filePath
+		fileExtension = fileExtension.toLowerCase()
+		if fileExtension of signatureMap
+			 toTest = validate fd, signatureMap[fileExtension]
+		else
+			toTest = false
+		retour done , toTest
 
-				else
-					console.log fileExtension, ': ce format n\'est pas supporté'
-					false
+		null
+
 
 module.exports = (grunt)->
 	fs = require 'fs'
 	path = require 'path'
-
 	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', ()->
-		console.log 'this', this
+		done = @async()
 		@files.forEach (file)->
-			console.log 'file.src', file.src
 			file.src.forEach (filepath)->
-				console.log 'Loading file:',filepath
-				checkMedia filepath
-			# 	test =checkMedia filepath
-			# 	if test
-			# 		console.log 'check', filepath, 'OK'
+				# console.log 'Loading file:',filepath
+				if fs.lstatSync(filepath).isFile()
+					promise = checkMedia filepath , done, (done, test) ->
+						# grunt.util.warn
+						# console.log test
+						if test
+							grunt.log.ok filepath, 'format OK'
+						else
+							grunt.log.error filepath, 'wrong format'
+							# console.log grunt.log.error
+							# grunt.fatal filepath, 'wrong format'
+
+						done()
+
+
+
