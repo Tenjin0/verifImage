@@ -51,7 +51,7 @@ checkMedia = (filePath, done, retour)  ->
 module.exports = (grunt)->
 	fs = require 'fs'
 	path = require 'path'
-	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', ()->
+	grunt.registerMultiTask 'checkMedia:check', 'Check that files correspond to their extensions.', ()->
 		done = @async()
 		@files.forEach (file)->
 			file.src.forEach (filepath)->
@@ -68,6 +68,9 @@ module.exports = (grunt)->
 							# grunt.fatal filepath, 'wrong format'
 
 						done()
+	grunt.registerMultiTask 'checkMedia:error', ' if there is any error while ckecking.', ()->
+		done = @async()
+		@files.forEach (file)-
 
 
 

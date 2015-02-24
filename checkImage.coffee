@@ -40,6 +40,33 @@ module.exports =
 					fileExtension = path.extname filePath
 					fileExtension = fileExtension.toLowerCase()
 					# console.log 'open', fd
+=======
+
+for extension, signatures of signatureMap
+	signatureMap[extension] = for sig in signatures
+		new Buffer(sig,'hex')
+
+validate = (fd, tabSignatureValue) ->
+	for expectedSignature in tabSignatureValue
+		fileHeader = new Buffer(expectedSignature.length)
+		fs.readSync fd, fileHeader, 0, expectedSignature.length, 0
+
+		if fileHeader.equals(expectedSignature)
+			return true
+	false
+
+module.exports =
+	checkImage : (filePath)  ->
+		fs.exists filePath, (exists) ->
+			if (exists)
+				fs.open filePath, 'r', (err, fd) ->
+					if err
+						throw err
+
+					fileExtension = path.extname filePath
+					fileExtension = fileExtension.toLowerCase()
+
+
 					if fileExtension of signatureMap
 						toTest = validate fd, signatureMap[fileExtension]
 						if toTest
@@ -48,8 +75,10 @@ module.exports =
 							console.log fileExtension, ' : ca marche pas !!!!'
 					else
 						console.log fileExtension, ': ce format n\'est pas supporté'
+
 			# else
 				# console.log 'je voudrais lancer une erreur'
 				# throw new Error("je voudrais lancer une erreur");
 				# false
 		null
+

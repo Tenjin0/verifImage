@@ -31,6 +31,6 @@ module.exports = (grunt)->
 
 	grunt.registerTask 'default', [
 		# 'coffee:compile'
-		'checkMedia:dist'
+		'checkMedia'
 
 	]
