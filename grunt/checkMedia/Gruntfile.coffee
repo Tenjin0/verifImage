@@ -30,55 +30,56 @@ validate = (fd, tabSignatureValue) ->
 		# console.log fileHeader , '<-------->', expectedSignature
 		if fileHeader.equals(expectedSignature)
 			return true
-	false
+	return false
 
 
-checkMedia = (filePath, done, retour)  ->
+checkMedia = (filePath, retour) ->
 
-	fs.open filePath, 'r', (err, fd) ->
+	fs.lstat filePath, (err, stats) ->
 		if err
 			throw err
-		fileExtension = path.extname filePath
-		fileExtension = fileExtension.toLowerCase()
-		if fileExtension of signatureMap
-			 toTest = validate fd, signatureMap[fileExtension]
+		if stats.isFile()
+			fs.open filePath, 'r', (err, fd) ->
+				if err
+					throw err
+				fileExtension = path.extname filePath.toLowerCase()
+				if fileExtension of signatureMap
+					 toTest = validate fd, signatureMap[fileExtension]
+				else
+					toTest = false
+				retour toTest
 		else
-			toTest = false
-		retour done , toTest
+			retour null
 
-		null
+render = (done,hasError) ->
+
+	console.log '\n>>>>> Execution des fonctions asynchrones terminées'
+	if hasError
+		grunt.fatal 'certains fichiers sont erronés'
+	done()
 
 
 module.exports = (grunt)->
 	fs = require 'fs'
 	path = require 'path'
-	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', ()->
-		asyncFunction = 0
+	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', registerCallback = ()->
 		hasError = false
 		done = @async()
-		total = @files.length
+		totalpath = @files.length
+		console.log '\nnombre total de chemin a traiter',totalpath
+		proc =_.after totalpath, afterCallback = ()->
+			render(done,hasError)
 		@files.forEach (file)->
 			file.src.forEach (filepath)->
-				if fs.lstatSync(filepath).isFile()
-					asyncFunction++
-					console.log 'nombre de fonction asynchrone en cours',asyncFunction
-					checkMedia filepath,done, (done, test) =>
-						asyncFunction--
-						console.log 'nombre de fonction asynchrone restante',asyncFunction
-						if test
-							grunt.log.ok filepath, 'format OK'
-						else
-							grunt.log.error filepath, 'wrong format'
-							hasError = true
-						if asyncFunction == 0
-							# s'execute une fois que toutes les fonctions asynchrones sont terminées
-							console.log 'toutes les fonctions asynchrones sont terminées',asyncFunction
-							if hasError
-								grunt.fatal 'certains fichiers sont erronés'
-							# _.after total
-							done()
-
-
+				checkMedia filepath,checkMediaCallback = (test) ->
+					if test is null
+						console.log '>>', filepath, 'est un dossier'
+					else if test is true
+						grunt.log.ok filepath, 'format OK'
+					else if test is false
+						grunt.log.error filepath, 'wrong format'
+						hasError = true
+					proc()
 
 
 
