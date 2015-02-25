@@ -26,10 +26,12 @@ validate = (fd, tabSignatureValue) ->
 			return true
 	return false
 
-checkMedia = (filePath, callback)->
+checkMedia = (filePath, callback) ->
 	fs.lstat filePath, (err, stats)->
 		if err
 			throw err
+		fileExtension = path.extname filePath.toLowerCase()
+
 		if stats.isFile()
 			fs.open filePath, 'r', (err, fd)->
 				if err
@@ -38,7 +40,7 @@ checkMedia = (filePath, callback)->
 				if fileExtension of signatureMap
 					isValid = validate fd, signatureMap[fileExtension]
 				else
-					isValid = false
+					isValid = null
 				callback isValid if callback
 		else
 			callback null if callback
