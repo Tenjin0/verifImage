@@ -2,7 +2,7 @@ fs = require 'fs'
 path = require 'path'
 grunt = require 'grunt'
 _ = require 'underscore'
-# checkMedia = require '../../checkImage'
+
 signatureMap =
 	'.png' : ['89504E470D0A1A0A']
 	'.jpg' : ['FFD8FF']
@@ -18,68 +18,52 @@ for extension, signatures of signatureMap
 	signatureMap[extension] = for sig in signatures
 		new Buffer(sig,'hex')
 
-bonjour = ( string ) ->
-	console.log 'Bonjour', string
-	null
-
 validate = (fd, tabSignatureValue) ->
 	for expectedSignature in tabSignatureValue
-		# console.log expectedSignature
 		fileHeader = new Buffer(expectedSignature.length)
 		fs.readSync fd, fileHeader, 0, expectedSignature.length, 0
-		# console.log fileHeader , '<-------->', expectedSignature
 		if fileHeader.equals(expectedSignature)
 			return true
 	return false
 
-
-checkMedia = (filePath, retour) ->
-
-	fs.lstat filePath, (err, stats) ->
+checkMedia = (filePath, callback)->
+	fs.lstat filePath, (err, stats)->
 		if err
 			throw err
 		if stats.isFile()
-			fs.open filePath, 'r', (err, fd) ->
+			fs.open filePath, 'r', (err, fd)->
 				if err
 					throw err
 				fileExtension = path.extname filePath.toLowerCase()
 				if fileExtension of signatureMap
-					 toTest = validate fd, signatureMap[fileExtension]
+					isValid = validate fd, signatureMap[fileExtension]
 				else
-					toTest = false
-				retour toTest
+					isValid = false
+				callback isValid if callback
 		else
-			retour null
+			callback null if callback
 
-render = (done,hasError) ->
-
-	console.log '\n>>>>> Execution des fonctions asynchrones terminées'
+render = (hasError, callback)->
 	if hasError
-		grunt.fatal 'certains fichiers sont erronés'
-	done()
-
+		grunt.fatal 'Some files have formats not matching their extensions.'
+	callback() if callback
 
 module.exports = (grunt)->
-	fs = require 'fs'
-	path = require 'path'
-	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', registerCallback = ()->
+	grunt.registerMultiTask 'checkMedia', 'Checks that files have matching format and extension.', registerCallback = ->
 		hasError = false
 		done = @async()
-		totalpath = @files.length
-		console.log '\nnombre total de chemin a traiter',totalpath
-		proc =_.after totalpath, afterCallback = ()->
-			render(done,hasError)
+		totalPathCount = @files.length
+		completeProcess =_.after totalPathCount, afterCallback = ->
+			render hasError,done
+
 		@files.forEach (file)->
 			file.src.forEach (filepath)->
-				checkMedia filepath,checkMediaCallback = (test) ->
+				checkMedia filepath, checkMediaCallback = (test)->
 					if test is null
-						console.log '>>', filepath, 'est un dossier'
+						grunt.verbose.ok filepath, '[IGNORED]'
 					else if test is true
-						grunt.log.ok filepath, 'format OK'
+						grunt.verbose.ok filepath, '[OK]'
 					else if test is false
-						grunt.log.error filepath, 'wrong format'
+						grunt.log.error filepath, '[ERROR]'
 						hasError = true
-					proc()
-
-
-
+					completeProcess()
