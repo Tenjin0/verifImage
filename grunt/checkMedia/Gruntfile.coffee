@@ -1,32 +1,53 @@
+
 fs = require 'fs'
 path = require 'path'
-grunt = require 'grunt'
 _ = require 'underscore'
 
 signatureMap =
-	'.png' : ['89504E470D0A1A0A']
-	'.jpg' : ['FFD8FF']
-	'.jpeg' : ['FFD8FF']
-	'.gif' : ['47494638']
-	'.bmp' : ['41564920']
-	'.avi' : ['41564920', '52494646']
-	'.mkv' : ['1A45DFA3']
-	'.mp4' : ['00000018667479706D703432', '000000186674797069736F6D', '000000186674797033677035']
-	'.mp3' : ['494433', 'FFFB', 'FFF3', 'FFE3']
+	'.png' :
+		tab : ['89504E470D0A1A0A']
 
-for extension, signatures of signatureMap
-	signatureMap[extension] = for sig in signatures
+	'.jpg' :
+		tab : ['FFD8FF']
+
+	'.jpeg' :
+		tab : ['FFD8FF']
+
+	'.gif' :
+		tab : ['47494638']
+
+	'.bmp' :
+		tab : ['41564920']
+
+	'.avi' :
+		tab : ['41564920', '52494646']
+
+	'.mkv' :
+		tab :['1A45DFA3']
+
+	'.mp4' :
+		position : 4,
+		tab : ['667479706D703432', '6674797069736F6D', '6674797033677035']
+
+	'.mp3' :
+		tab : ['494433', 'FFFB', 'FFF3', 'FFE3']
+
+
+for extension, values of signatureMap
+	values['tab'] = for sig in values['tab']
 		new Buffer(sig,'hex')
 
-validate = (fd, tabSignatureValue) ->
-	for expectedSignature in tabSignatureValue
+validate = (fd,fileExtension)->
+
+	for expectedSignature in signatureMap[fileExtension]['tab']
 		fileHeader = new Buffer(expectedSignature.length)
-		fs.readSync fd, fileHeader, 0, expectedSignature.length, 0
+		position = if signatureMap[fileExtension]['position'] is undefined then 0 else signatureMap[fileExtension]['position']
+		fs.readSync fd, fileHeader, 0, expectedSignature.length, position
 		if fileHeader.equals(expectedSignature)
 			return true
-	return false
+	false
 
-checkMedia = (filePath, callback) ->
+checkMedia = (filePath, callback)->
 	fs.lstat filePath, (err, stats)->
 		if err
 			throw err
@@ -36,19 +57,13 @@ checkMedia = (filePath, callback) ->
 			fs.open filePath, 'r', (err, fd)->
 				if err
 					throw err
-				fileExtension = path.extname filePath.toLowerCase()
 				if fileExtension of signatureMap
-					isValid = validate fd, signatureMap[fileExtension]
+					isValid = validate fd,fileExtension
 				else
 					isValid = null
 				callback isValid if callback
 		else
 			callback null if callback
-
-render = (hasError, callback)->
-	if hasError
-		grunt.fatal 'Some files have formats not matching their extensions.'
-	callback() if callback
 
 module.exports = (grunt)->
 	grunt.registerMultiTask 'checkMedia', 'Checks that files have matching format and extension.', registerCallback = ->
@@ -56,7 +71,9 @@ module.exports = (grunt)->
 		done = @async()
 		totalPathCount = @files.length
 		completeProcess =_.after totalPathCount, afterCallback = ->
-			render hasError,done
+			if hasError
+				grunt.fatal 'Some files have formats not matching their extensions.'
+			done()
 
 		@files.forEach (file)->
 			file.src.forEach (filepath)->

@@ -1,37 +1,46 @@
 
 fs = require 'fs'
 path = require 'path'
-indexFormatMp4 = 4
 signatureMap =
-	'.png' : ['89504E470D0A1A0A']
-	'.jpg' : ['FFD8FF']
-	'.jpeg' : ['FFD8FF']
-	'.gif' : ['47494638']
-	'.bmp' : ['41564920']
-	'.avi' : ['41564920', '52494646']
-	'.mkv' : ['1A45DFA3']
-	'.mp4' : ['667479706D703432', '6674797069736F6D', '6674797033677035']
-	'.mp3' : ['494433', 'FFFB', 'FFF3', 'FFE3']
+	'.png' :
+		tab : ['89504E470D0A1A0A']
 
-for extension, signatures of signatureMap
-	console.log 'extension', extension, 'signatures',signatures[tab]
-	signatureMap[extension] = for sig in signatures
+	'.jpg' :
+		tab : ['FFD8FF']
+
+	'.jpeg' :
+		tab : ['FFD8FF']
+
+	'.gif' :
+		tab : ['47494638']
+
+	'.bmp' :
+		tab : ['41564920']
+
+	'.avi' :
+		tab : ['41564920', '52494646']
+
+	'.mkv' :
+		tab :['1A45DFA3']
+
+	'.mp4' :
+		position : 4,
+		tab : ['667479706D703432', '6674797069736F6D', '6674797033677035']
+
+	'.mp3' :
+		tab : ['494433', 'FFFB', 'FFF3', 'FFE3']
+
+
+for extension, values of signatureMap
+	values['tab'] = for sig in values['tab']
 		new Buffer(sig,'hex')
 
-# for extension, signatures of signatureMap
-# 	console.log signatureMap[extension]
+validate = (fd,fileExtension) ->
 
-validate = (fd,fileExtension, tabSignatureValue) ->
-
-	for expectedSignature in tabSignatureValue
-		position = 0
-		console.log 'fileExtension',fileExtension
+	for expectedSignature in signatureMap[fileExtension]['tab']
 		fileHeader = new Buffer(expectedSignature.length)
-		if fileExtension is '.mp4' # && position <= fd.length
-			position = indexFormatMp4
-		console.log 'position',position
+		position = if signatureMap[fileExtension]['position'] is undefined then 0 else signatureMap[fileExtension]['position']
 		fs.readSync fd, fileHeader, 0, expectedSignature.length, position
-		console.log 'compare',fileHeader , '<-------->', expectedSignature
 		if fileHeader.equals(expectedSignature)
 			return true
 	false
@@ -48,7 +57,7 @@ module.exports =
 					if err
 						throw err
 					if fileExtension of signatureMap
-						isValid = validate fd,fileExtension, signatureMap[fileExtension]
+						isValid = validate fd,fileExtension
 					else
 						isValid = null
 					callback isValid if callback
