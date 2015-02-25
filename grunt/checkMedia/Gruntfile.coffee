@@ -1,6 +1,7 @@
 fs = require 'fs'
 path = require 'path'
 grunt = require 'grunt'
+_ = require 'underscore'
 # checkMedia = require '../../checkImage'
 signatureMap =
 	'.png' : ['89504E470D0A1A0A']
@@ -32,7 +33,7 @@ validate = (fd, tabSignatureValue) ->
 	false
 
 
-checkMedia = (filePath,nb, done, retour)  ->
+checkMedia = (filePath, done, retour)  ->
 
 	fs.open filePath, 'r', (err, fd) ->
 		if err
@@ -52,8 +53,8 @@ module.exports = (grunt)->
 	fs = require 'fs'
 	path = require 'path'
 	grunt.registerMultiTask 'checkMedia', 'Check that files correspond to their extensions.', ()->
-		count = 0
-		err = false
+		asyncFunction = 0
+		hasError = false
 		done = @async()
 		total = @files.length
 		@files.forEach (file)->
@@ -61,20 +62,22 @@ module.exports = (grunt)->
 				if fs.lstatSync(filepath).isFile()
 					asyncFunction++
 					console.log 'nombre de fonction asynchrone en cours',asyncFunction
-					promise = checkMedia filepath,nb,done, (done, test) =>
+					checkMedia filepath,done, (done, test) =>
 						asyncFunction--
 						console.log 'nombre de fonction asynchrone restante',asyncFunction
 						if test
 							grunt.log.ok filepath, 'format OK'
 						else
 							grunt.log.error filepath, 'wrong format'
-							err = true
+							hasError = true
 						if asyncFunction == 0
+							# s'execute une fois que toutes les fonctions asynchrones sont terminées
 							console.log 'toutes les fonctions asynchrones sont terminées',asyncFunction
-							if err
+							if hasError
 								grunt.fatal 'certains fichiers sont erronés'
+							# _.after total
 							done()
-						
+
 
 
 
