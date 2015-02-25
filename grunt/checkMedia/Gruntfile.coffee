@@ -58,16 +58,19 @@ module.exports = (grunt)->
 		total = @files.length
 		@files.forEach (file)->
 			file.src.forEach (filepath)->
-				count++
-				nb=count
 				if fs.lstatSync(filepath).isFile()
+					asyncFunction++
+					console.log 'nombre de fonction asynchrone en cours',asyncFunction
 					promise = checkMedia filepath,nb,done, (done, test) =>
+						asyncFunction--
+						console.log 'nombre de fonction asynchrone restante',asyncFunction
 						if test
 							grunt.log.ok filepath, 'format OK'
 						else
 							grunt.log.error filepath, 'wrong format'
 							err = true
-						if nb == total
+						if asyncFunction == 0
+							console.log 'toutes les fonctions asynchrones sont terminées',asyncFunction
 							if err
 								grunt.fatal 'certains fichiers sont erronés'
 							done()
